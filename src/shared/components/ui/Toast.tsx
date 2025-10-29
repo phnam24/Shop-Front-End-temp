@@ -1,3 +1,4 @@
+// src/shared/components/ui/Toast.tsx
 import React, { useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
@@ -53,17 +54,17 @@ export const Toast: React.FC<ToastProps> = ({
 
   return (
     <div
-      className={`flex items-start gap-3 p-4 rounded-xl border-2 shadow-lg backdrop-blur-sm animate-slide-in-right ${styles[type]}`}
+      className={`flex items-start gap-4 p-5 rounded-xl border-2 shadow-2xl backdrop-blur-sm animate-slide-in-right transition-all hover:scale-105 hover:-translate-y-1 ${styles[type]}`}
       role="alert"
     >
-      <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${iconStyles[type]}`} />
-      <p className="flex-1 text-sm font-medium leading-relaxed">{message}</p>
+      <Icon className={`w-6 h-6 flex-shrink-0 mt-0.5 ${iconStyles[type]}`} />
+      <p className="flex-1 text-base font-semibold leading-relaxed">{message}</p>
       <button
         onClick={() => onClose(id)}
-        className="flex-shrink-0 p-1 hover:bg-black/10 rounded-lg transition-colors"
+        className="flex-shrink-0 p-1.5 hover:bg-black/10 rounded-lg transition-colors"
         aria-label="Đóng"
       >
-        <X className="w-4 h-4" />
+        <X className="w-5 h-5" />
       </button>
     </div>
   );
@@ -71,16 +72,16 @@ export const Toast: React.FC<ToastProps> = ({
 
 // Toast Container Component
 export const ToastContainer: React.FC<{
-  toasts: Array<ToastProps>;
+  toasts: Array<Omit<ToastProps, 'onClose'>>;
   onClose: (id: string) => void;
 }> = ({ toasts, onClose }) => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+    <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 max-w-md w-full pointer-events-none">
       <div className="pointer-events-auto">
         {toasts.map((toast) => (
-          <div key={toast.id} className="mb-3">
+          <div key={toast.id} className="mb-4">
             <Toast {...toast} onClose={onClose} />
           </div>
         ))}
@@ -88,4 +89,3 @@ export const ToastContainer: React.FC<{
     </div>
   );
 };
-
