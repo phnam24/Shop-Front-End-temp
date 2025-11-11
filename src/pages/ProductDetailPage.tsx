@@ -15,11 +15,9 @@ import {
   Zap
 } from 'lucide-react';
 import { ProductCard } from '../domains/products/components/ProductCard';
-import { ProductGallery } from '../domains/products/components/ProductGallery';
-import { ProductVariants } from '../domains/products/components/ProductVariants';
 import { ProductReviews } from '../domains/reviews/components/ProductReviews';
 import { ReviewForm } from '../domains/reviews/components/ReviewForm';
-import { mockDataService } from '../domains/products/services/mockDataService';
+import { productService } from '../domains/products/services/productService';
 import type { Product, ProductVariant } from '../domains/products/types';
 
 const ProductDetailPage: React.FC = () => {
@@ -29,6 +27,8 @@ const ProductDetailPage: React.FC = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [variantSpecs, setVariantSpecs] = useState<any[]>([]);
+  const [loadingSpecs, setLoadingSpecs] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'reviews'>('description');
@@ -44,16 +44,22 @@ const ProductDetailPage: React.FC = () => {
   const loadProduct = async () => {
     setIsLoading(true);
     try {
-      const data = await mockDataService.getProductBySlug(slug!);
+      const data = await productService.getProductBySlug(slug!);
+      
+      // Load variants for this product
+      const variants = await productService.getVariantsByProductId(data.id);
+      data.variants = variants;
+      
       setProduct(data);
       
-      // Set default variant
-      if (data.variants && data.variants.length > 0) {
-        setSelectedVariant(data.variants[0]);
+      // Set default variant and load its specs
+      if (variants && variants.length > 0) {
+        setSelectedVariant(variants[0]);
+        loadVariantSpecs(variants[0].id);
       }
 
       // Load related products
-      const related = await mockDataService.getProducts({
+      const related = await productService.getProducts({
         categoryId: data.categoryId,
         pageSize: 4,
       });
@@ -66,8 +72,26 @@ const ProductDetailPage: React.FC = () => {
     }
   };
 
-  const handleVariantSelect = (variant: ProductVariant) => {
+  const handleVariantSelect = async (variant: ProductVariant) => {
     setSelectedVariant(variant);
+    
+    // Load specs for the selected variant
+    if (variant.id) {
+      loadVariantSpecs(variant.id);
+    }
+  };
+
+  const loadVariantSpecs = async (variantId: number) => {
+    setLoadingSpecs(true);
+    try {
+      const specs = await productService.getVariantSpecs(variantId);
+      setVariantSpecs(specs);
+    } catch (error) {
+      console.error('Load variant specs error:', error);
+      setVariantSpecs([]);
+    } finally {
+      setLoadingSpecs(false);
+    }
   };
 
   const handleQuantityChange = (delta: number) => {
@@ -120,7 +144,9 @@ const ProductDetailPage: React.FC = () => {
     ? Math.round(((selectedVariant.priceList - selectedVariant.priceSale) / selectedVariant.priceList) * 100)
     : 0;
 
-  const images = product.images && product.images.length > 0 ? product.images : [product.avatar || '/placeholder.png'];
+  const images = Array.isArray(product.images) && product.images.length > 0 
+    ? product.images 
+    : [product.avatar || '/placeholder.png'];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -405,20 +431,140 @@ const ProductDetailPage: React.FC = () => {
             )}
 
             {activeTab === 'specs' && selectedVariant && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[
-                  { label: 'CPU', value: selectedVariant.cpuModel },
-                  { label: 'GPU', value: selectedVariant.gpuModel },
-                  { label: 'RAM', value: `${selectedVariant.ramGb}GB` },
-                  { label: 'Ổ cứng', value: `${selectedVariant.storageGb}GB SSD` },
-                  { label: 'Hệ điều hành', value: selectedVariant.os },
-                  { label: 'Trọng lượng', value: `${(selectedVariant.weightG || 0) / 1000}kg` },
-                ].map((spec, idx) => (
-                  <div key={idx} className="flex justify-between py-3 border-b border-gray-200">
-                    <span className="font-semibold text-gray-900">{spec.label}</span>
-                    <span className="text-gray-700">{spec.value || 'N/A'}</span>
+              <div>
+                {loadingSpecs ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-6">
+                    {/* Thông tin chung */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                      <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b-2 border-primary-600">Thông tin chung</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {(() => {
+                          // Danh sách specs cho Thông tin chung
+                          const generalInfoKeys = [
+                            'Thương hiệu',
+                            'Bảo hành', 
+                            'Series model',
+                            'Tên',
+                            'Màu sắc',
+                            'Nhu cầu',
+                            'Phân loại'
+                          ];
+                          
+                          const generalSpecs = variantSpecs.filter(spec => 
+                            generalInfoKeys.includes(spec.attributeLabel)
+                          );
+
+                          // Thêm thông tin từ variant
+                          const additionalInfo = [
+                            { label: 'Màu sắc', value: selectedVariant.color },
+                            { label: 'SKU', value: selectedVariant.sku },
+                            { label: 'Còn lại', value: `${selectedVariant.stock} sản phẩm` },
+                          ];
+
+                          return (
+                            <>
+                              {generalSpecs.map((spec) => (
+                                <div key={spec.id} className="flex justify-between py-2 border-b border-gray-100">
+                                  <span className="text-sm font-medium text-gray-600">{spec.attributeLabel}</span>
+                                  <span 
+                                    className="text-sm text-gray-900 text-right max-w-[60%]" 
+                                    dangerouslySetInnerHTML={{ __html: spec.value }}
+                                  />
+                                </div>
+                              ))}
+                              {additionalInfo.map((info, idx) => (
+                                <div key={`add-${idx}`} className="flex justify-between py-2 border-b border-gray-100">
+                                  <span className="text-sm font-medium text-gray-600">{info.label}</span>
+                                  <span className="text-sm text-gray-900 text-right">{info.value}</span>
+                                </div>
+                              ))}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Thông số kỹ thuật chi tiết */}
+                    {variantSpecs.length > 0 && (
+                      <div className="bg-white rounded-lg border border-gray-200 p-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b-2 border-primary-600">Thông số kỹ thuật chi tiết</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {(() => {
+                            // Danh sách các specs kỹ thuật chi tiết (theo thứ tự)
+                            const technicalSpecsKeys = [
+                              'Tên CPU',
+                              'CPU',
+                              'Số nhân/luồng xử lý',
+                              'Tốc độ xử lý',
+                              'Bộ nhớ cache',
+                              'Đồ họa tích hợp',
+                              'Chip Đồ họa rời',
+                              'Chip đồ họa',
+                              'Bộ nhớ đồ họa rời',
+                              'Thế hệ bộ nhớ đồ họa rời',
+                              'NPU Card (TOPS)',
+                              'NPU',
+                              'Dung lượng RAM',
+                              'Ram',
+                              'Thế hệ RAM',
+                              'Bus RAM',
+                              'Số khe RAM',
+                              'Dung lượng RAM tối đa',
+                              'Webcam',
+                              'Dung lượng SSD',
+                              'Lưu trữ',
+                              'Số khe M.2',
+                              'Kích thước màn hình',
+                              'Màn hình',
+                              'Độ phân giải màn hình',
+                              'Công nghệ tấm nền',
+                              'Tần số quét',
+                              'Đèn bàn phím',
+                              'Bàn phím',
+                              'Kết nối có dây',
+                              'Cổng kết nối',
+                              'Cổng USB 2.0',
+                              'Cổng USB 3.1',
+                              'Cổng USB Type-C',
+                              'Cổng HDMI',
+                              'Kết nối Wifi',
+                              'Kết nối không dây',
+                              'Bluetooth',
+                              'Dung lượng pin',
+                              'Pin',
+                              'Công suất pin',
+                              'Kiểu pin',
+                              'Hệ điều hành',
+                              'Kích thước',
+                              'Khối lượng',
+                              'Bảo mật',
+                              'Âm thanh',
+                              'Đèn LED trên máy',
+                            ];
+
+                            const technicalSpecs = technicalSpecsKeys
+                              .map(key => variantSpecs.find(spec => spec.attributeLabel === key))
+                              .filter(spec => spec !== undefined);
+
+                            return technicalSpecs.map((spec) => (
+                              <div key={spec.id} className="flex justify-between py-2 border-b border-gray-100">
+                                <span className="text-sm font-medium text-gray-600 min-w-[140px]">{spec.attributeLabel}</span>
+                                <span 
+                                  className="text-sm text-gray-900 text-right flex-1 ml-3" 
+                                  dangerouslySetInnerHTML={{ __html: spec.value }}
+                                />
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -426,7 +572,7 @@ const ProductDetailPage: React.FC = () => {
               <div className="space-y-6">
                 {showReviewForm ? (
                   <ReviewForm
-                    productId={product.id}
+                    productId={String(product.id)}
                     productName={product.name}
                     onSuccess={() => {
                       setShowReviewForm(false);
@@ -436,7 +582,7 @@ const ProductDetailPage: React.FC = () => {
                   />
                 ) : (
                   <ProductReviews
-                    productId={product.id}
+                    productId={String(product.id)}
                     onWriteReview={() => setShowReviewForm(true)}
                   />
                 )}

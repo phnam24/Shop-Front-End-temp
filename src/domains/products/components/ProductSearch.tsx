@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, TrendingUp, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { mockDataService } from '../services/mockDataService';
+import { productService } from '../services/productService';
 import type { Product } from '../types';
 
 interface ProductSearchProps {
@@ -66,11 +66,8 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({
   const searchProducts = async (searchQuery: string) => {
     setIsLoading(true);
     try {
-      const products = await mockDataService.getProducts({
-        search: searchQuery,
-        pageSize: 5,
-      });
-      setResults(products.items);
+      const products = await productService.searchProducts(searchQuery);
+      setResults(products.slice(0, 5)); // Lấy 5 kết quả đầu tiên
     } catch (error) {
       console.error('Search error:', error);
     } finally {

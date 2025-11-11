@@ -80,77 +80,86 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </Link>
 
         {/* Product Info */}
-        <div className="p-4 space-y-2">
+        <div className="p-4 space-y-3">
           {/* Brand */}
-          <span className="text-xs text-primary-700 font-bold uppercase tracking-wide">
-            {product.brand?.name || 'N/A'}
-          </span>
+          <Link to={`/products/${product.slug}`}>
+            <span className="text-xs text-primary-700 font-bold uppercase tracking-wide hover:text-primary-900">
+              {product.brand?.name || 'N/A'}
+            </span>
+          </Link>
 
           {/* Product Name */}
           <Link to={`/products/${product.slug}`}>
-            <h3 className="font-bold text-gray-900 line-clamp-2 text-sm md:text-base group-hover:text-primary-700 transition-colors min-h-[3rem]">
+            <h3 className="font-medium text-gray-900 line-clamp-2 text-sm leading-relaxed group-hover:text-primary-700 transition-colors min-h-[2.5rem]">
               {product.name}
             </h3>
           </Link>
 
-          {/* Rating */}
-          <div className="flex items-center gap-2">
-            <div className="flex text-accent-400">
-              {[...Array(5)].map((_, i) => (
-                <Star 
-                  key={i} 
-                  className={`w-3 h-3 md:w-4 md:h-4 ${
-                    i < Math.floor(product.rating || 0) ? 'fill-current' : ''
-                  }`}
-                />
-              ))}
+          {/* Price - Fixed height container */}
+          <div className="min-h-[80px] flex flex-col justify-center space-y-1.5">
+            {/* Discount Badge */}
+            {discountPercent > 0 && (
+              <div className="inline-flex items-center gap-1 bg-red-50 px-2 py-1 rounded w-fit">
+                <span className="text-xs font-bold text-red-600">
+                  COMBO GIẢM ~ {formatPrice(product.maxPrice! - product.minPrice!)}
+                </span>
+              </div>
+            )}
+            
+            {/* Price display */}
+            <div className="flex items-baseline gap-2">
+              <span className="text-lg md:text-xl font-bold text-red-600">
+                {formatPrice(product.minPrice || 0)}
+              </span>
             </div>
-            <span className="text-xs text-gray-500 font-semibold">
-              ({product.reviewCount || 0})
-            </span>
+            
+            {/* Original price if discount exists */}
+            {product.hasDiscount && product.maxPrice && (
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span className="line-through">
+                  {formatPrice(product.maxPrice)}
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Specs Preview */}
+          {/* Specs Preview - Icon based */}
           {product.variants && product.variants[0] && (
-            <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+            <div className="space-y-1.5 text-xs text-gray-600 border-t pt-3">
               {product.variants[0].cpuModel && (
-                <span className="px-2 py-1 bg-gray-100 rounded">
-                  {product.variants[0].cpuModel.split(' ').slice(0, 3).join(' ')}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">🖥️</span>
+                  <span className="truncate">{product.variants[0].cpuModel}</span>
+                </div>
               )}
               {product.variants[0].ramGb && (
-                <span className="px-2 py-1 bg-gray-100 rounded">
-                  {product.variants[0].ramGb}GB RAM
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">💾</span>
+                  <span>{product.variants[0].ramGb}GB</span>
+                  {product.variants[0].storageGb && (
+                    <>
+                      <span className="text-gray-300">•</span>
+                      <span>{product.variants[0].storageGb}GB</span>
+                    </>
+                  )}
+                </div>
               )}
-              {product.variants[0].storageGb && (
-                <span className="px-2 py-1 bg-gray-100 rounded">
-                  {product.variants[0].storageGb}GB SSD
-                </span>
+              {product.variants[0].gpuModel && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">🎮</span>
+                  <span className="truncate">{product.variants[0].gpuModel}</span>
+                </div>
               )}
             </div>
           )}
-
-          {/* Price */}
-          <div className="flex items-baseline gap-2 pt-2">
-            <span className="text-xl md:text-2xl font-bold text-primary-900">
-              {formatPrice(product.minPrice || 0)}
-            </span>
-            {product.hasDiscount && product.maxPrice && (
-              <span className="text-xs text-gray-400 line-through font-medium">
-                {formatPrice(product.maxPrice)}
-              </span>
-            )}
-          </div>
 
           {/* Add to Cart Button */}
           <button
             onClick={() => onAddToCart?.(product)}
             disabled={!hasStock}
-            className="btn btn-accent w-full mt-4 text-sm shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn bg-primary-600 hover:bg-primary-700 text-white w-full text-sm font-medium py-2.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            {hasStock ? 'Thêm vào giỏ' : 'Hết hàng'}
+            Thêm vào giỏ
           </button>
         </div>
       </div>

@@ -22,17 +22,17 @@ export interface ProductVariant {
   ramGb?: number;
   storageGb?: number;
   cpuModel?: string;
-  igpu?: string;
+  igpu?: string | null;
   gpuModel?: string;
-  chipsetModel?: string;
+  chipsetModel?: string | null;
   os?: string;
   priceList: number;
-  priceSale?: number;
+  priceSale?: number | null;
   stock: number;
   weightG?: number;
-  specs?: VariantSpec[];
-  createdAt: string;
-  updatedAt?: string;
+  specs?: VariantSpec[] | null;
+  createdAt: string | null;
+  updatedAt?: string | null;
 }
 
 // Spec Attribute Types
@@ -46,34 +46,38 @@ export interface SpecAttribute {
 }
 
 export interface VariantSpec {
-  variantId: number;
-  attributeId: number;
-  value?: string;
-  attribute?: SpecAttribute;
+  id: string;
+  productVariantId: number;
+  specAttributeId: number;
+  attributeKey: string;
+  attributeLabel: string;
+  value: string;
 }
 
 // Product Types
 export interface Product {
   id: number;
-  categoryId: number;
-  brandId: number;
+  categories: Category[]; // Array of categories
+  brand: Brand; // Brand object embedded
   name: string;
   slug: string;
   shortDescription?: string;
   description?: string;
+  priceList: number; // Giá niêm yết
+  priceSale: number; // Giá khuyến mãi
   avatar?: string;
-  images?: string[];
-  firstImage?: string;
-  status: 0 | 1;
-  createdAt: string;
-  updatedAt?: string;
+  images?: string | string[]; // API trả về string (JSON), cần parse
+  firstImage?: string | null;
+  status: boolean;
+  createdAt: string | null;
+  updatedAt?: string | null;
   
-  // Relations (sẽ được populate từ API)
-  category?: Category;
-  brand?: Brand;
+  // Relations
   variants?: ProductVariant[];
   
-  // Computed fields
+  // Computed fields (for backward compatibility)
+  categoryId?: number; // Lấy từ categories[0].id nếu cần
+  brandId?: number; // Lấy từ brand.id nếu cần
   minPrice?: number;
   maxPrice?: number;
   hasDiscount?: boolean;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockDataService } from '../services/mockDataService';
+import { productService } from '../services/productService';
 import type { Product, ProductVariant } from '../types';
 
 export const useProductDetail = (slug: string | undefined) => {
@@ -26,16 +26,21 @@ export const useProductDetail = (slug: string | undefined) => {
     setError(null);
     
     try {
-      const data = await mockDataService.getProductBySlug(slug);
+      const data = await productService.getProductBySlug(slug);
+      
+      // Load variants for this product
+      const variants = await productService.getVariantsByProductId(data.id);
+      data.variants = variants;
+      
       setProduct(data);
       
       // Set default variant
-      if (data.variants && data.variants.length > 0) {
-        setSelectedVariant(data.variants[0]);
+      if (variants && variants.length > 0) {
+        setSelectedVariant(variants[0]);
       }
 
       // Load related products
-      const related = await mockDataService.getProducts({
+      const related = await productService.getProducts({
         categoryId: data.categoryId,
         pageSize: 5,
       });

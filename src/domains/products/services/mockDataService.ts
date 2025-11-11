@@ -85,7 +85,7 @@ const generateMockProducts = (): Product[] => {
         `/products/laptop-${index + 1}-3.jpg`,
       ],
       firstImage: `/products/laptop-${index + 1}-1.jpg`,
-      status: 1,
+      status: true,
       createdAt: new Date().toISOString(),
       brand: mockBrands[brandId - 1],
       minPrice: salePrice || basePrice,

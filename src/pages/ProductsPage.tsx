@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Filter, Grid, List, ChevronDown, X, SlidersHorizontal, Home } from 'lucide-react';
 import { ProductCard } from '../domains/products/components/ProductCard';
-import { mockDataService, mockBrands, mockCategories } from '../domains/products/services/mockDataService';
-import type { Product, ProductFilters, ProductSortOption } from '../domains/products/types';
+import { productService } from '../domains/products/services/productService';
+import type { Product, ProductFilters, ProductSortOption, Category, Brand } from '../domains/products/types';
 
 const ProductsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -35,23 +37,41 @@ const ProductsPage: React.FC = () => {
     totalPages: 0,
   });
 
-  // Get category name
-  const getCategoryName = () => {
-    if (!filters.categoryId) return 'Tất cả sản phẩm';
-    const allCategories = mockCategories.flatMap(c => [c, ...(c.children || [])]);
-    const category = allCategories.find(c => c.id === filters.categoryId);
-    return category?.name || 'Sản phẩm';
-  };
+  // Load initial data
+  useEffect(() => {
+    loadInitialData();
+  }, []);
 
-  // Load products
+  // Load products when filters change
   useEffect(() => {
     loadProducts();
   }, [filters, sort, pagination.page]);
 
+  const loadInitialData = async () => {
+    try {
+      const [categoriesData, brandsData] = await Promise.all([
+        productService.getCategories(),
+        productService.getBrands(),
+      ]);
+      setCategories(categoriesData);
+      setBrands(brandsData);
+    } catch (error) {
+      console.error('Load initial data error:', error);
+    }
+  };
+
+  // Get category name
+  const getCategoryName = () => {
+    if (!filters.categoryId) return 'Tất cả sản phẩm';
+    const allCategories = categories.flatMap(c => [c, ...(c.children || [])]);
+    const category = allCategories.find(c => c.id === filters.categoryId);
+    return category?.name || 'Sản phẩm';
+  };
+
   const loadProducts = async () => {
     setIsLoading(true);
     try {
-      const result = await mockDataService.getProducts({
+      const result = await productService.getProducts({
         ...filters,
         sort,
         page: pagination.page,
@@ -172,7 +192,7 @@ const ProductsPage: React.FC = () => {
       <div className="border-b border-gray-200 pb-6">
         <h4 className="text-sm font-semibold text-gray-900 mb-3">Thương hiệu</h4>
         <div className="space-y-2 max-h-48 overflow-y-auto">
-          {mockBrands.slice(0, 9).map((brand) => (
+          {brands.slice(0, 9).map((brand) => (
             <label key={brand.id} className="flex items-center cursor-pointer group">
               <input
                 type="checkbox"

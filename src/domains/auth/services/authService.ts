@@ -11,7 +11,7 @@ import type {
 } from '../types';
 
 // Base API URL - sẽ được config từ environment
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 // Axios instance
 const apiClient = axios.create({

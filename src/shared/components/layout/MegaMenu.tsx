@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Laptop, Smartphone, HardDrive, Monitor, Mouse, Keyboard, Menu } from 'lucide-react';
 import { clsx } from 'clsx';
+import { productService } from '../../../domains/products/services/productService';
+import type { Category } from '../../../domains/products/types';
 
 // --- Định nghĩa Types Rõ Ràng ---
 interface MenuLink {
@@ -219,6 +221,21 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({
   // --- Logic State (useEffect, handleInternalNavHover, currentMenuData) giữ nguyên ---
     const [activeInternalKey, setActiveInternalKey] = useState<string | null>(activeTriggerKey || 'danhMuc');
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const [categories, setCategories] = useState<Category[]>([]);
+
+    // Load categories from API
+    useEffect(() => {
+      loadCategories();
+    }, []);
+
+    const loadCategories = async () => {
+      try {
+        const data = await productService.getCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error('Load categories error:', error);
+      }
+    };
 
     useEffect(() => {
         if (isOpen && activeTriggerKey && activeTriggerKey !== activeInternalKey) {

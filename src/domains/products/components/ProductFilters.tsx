@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
-import type { ProductFilters as Filters } from '../types';
-import { mockBrands } from '../services/mockDataService';
+import type { ProductFilters as Filters, Brand } from '../types';
+import { productService } from '../services/productService';
 
 interface ProductFiltersProps {
   filters: Filters;
@@ -14,6 +14,21 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
   onFilterChange,
   onClearFilters,
 }) => {
+  const [brands, setBrands] = useState<Brand[]>([]);
+  
+  useEffect(() => {
+    loadBrands();
+  }, []);
+
+  const loadBrands = async () => {
+    try {
+      const data = await productService.getBrands();
+      setBrands(data);
+    } catch (error) {
+      console.error('Load brands error:', error);
+    }
+  };
+
   const activeFiltersCount = 
     (filters.brandIds?.length || 0) +
     (filters.ramGb?.length || 0) +
@@ -77,7 +92,7 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
       <div className="border-b border-gray-200 pb-6">
         <h4 className="text-sm font-semibold text-gray-900 mb-3">Thương hiệu</h4>
         <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-          {mockBrands.slice(0, 9).map((brand) => (
+          {brands.slice(0, 9).map((brand) => (
             <label key={brand.id} className="flex items-center cursor-pointer group">
               <input
                 type="checkbox"
@@ -199,7 +214,7 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
           </h4>
           <div className="flex flex-wrap gap-2">
             {filters.brandIds?.map((brandId) => {
-              const brand = mockBrands.find(b => b.id === brandId);
+              const brand = brands.find(b => b.id === brandId);
               return brand ? (
                 <span
                   key={brandId}
